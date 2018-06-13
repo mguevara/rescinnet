@@ -1,0 +1,16 @@
+{
+    "contents" : "# Get Data\n# It takes data as dataframe (edges) or as matrix (table) to be exported in proper form to be used by the diversity function.\n# data Data to be processed as dataframe or as matrix. \n# category_row TRUE if column analysis is needed.\nget_data <- function(data, category_row=FALSE)\n{\n\tif (is.data.frame(data)) {\n\t\tif(category_row==TRUE) {\n\t\t\t#diversity <- data.frame(row.names=levels(data[,2]))\n\t\t\tdata <- droplevels(data) #delete un used levels\n\t\t\tX <- matrix(0, nrow=nlevels(data[,2]), ncol=nlevels(data[,1]), dimnames=list(levels(data[,2]),levels(data[,1])))\n\t\t\tX[cbind(data[,2], data[,1])] <- data[,3]\n\t\t}\n\t\telse {\n\t\t\t#diversity <- data.frame(row.names=levels(data[,1]))\n\t\t\tX <- matrix(0, nrow=nlevels(data[,1]), ncol=nlevels(data[,2]), dimnames=list(levels(data[,1]),levels(data[,2])))\n\t\t\tX[cbind(data[,1], data[,2])] <- data[,3]\n\t\t}\n\t}\n\telse {\n\t\tif (category_row==TRUE) {\n\t\t\tX <- t(data)\n\t\t\t#diversity <- data.frame(row.names=rownames(X))\n\t\t}\n\t\telse {\n\t\t\tX <- data\n\t\t\t#diversity <- data.frame(row.names=rownames(X))\n\t\t}  \n\t}\n\treturn(X)\n\t\n}",
+    "created" : 1447695777592.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "363157394",
+    "id" : "8084615F",
+    "lastKnownWriteTime" : 1446474599,
+    "path" : "~/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/PAPER/PackageDIVERSITY/diver/R/utils.R",
+    "project_path" : null,
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "r_source"
+}

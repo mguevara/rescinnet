@@ -1,0 +1,18 @@
+{
+    "contents" : "#Export RSpace\n#source PLOTRSPace.R\n#' @export\nexport_rspace <- function()\n{\n  nodes<-load_taxonomy(taxo=\"scimago\")\n  scimago<- create_rs_simago()\n  \n  \n  rs.edges <- as.data.frame(get.edgelist(scimago))\n  rs.edges['weight'] <- E(scimago)$weight\n  rs.edges['used'] <- E(scimago)$used\n  \n  write.csv(rs.edges, file= \"/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\\ SPACE\\ OUTPUT/scimago_links.csv\") \n  \n  \n  new_nodes = data.frame(nodes$Id, nodes$subd_name)\n  names(new_nodes) = c(\"id\", \"name_category\")\n  write.csv(new_nodes, file=\"/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/TAXONOMIES/SCIMAGO/nodes_id_names.csv\")\n  l = layout()\n  \n}\n",
+    "created" : 1491909920608.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "620830901",
+    "id" : "8765D3F3",
+    "lastKnownWriteTime" : 1507035048,
+    "path" : "~/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/codes/scimaps/R/exportRSpace-OPUS-2017.R",
+    "project_path" : "R/exportRSpace-OPUS-2017.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "type" : "r_source"
+}

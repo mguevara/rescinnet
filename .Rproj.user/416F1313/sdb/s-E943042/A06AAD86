@@ -1,0 +1,20 @@
+{
+    "collab_server" : "",
+    "contents" : "#' SCImago taxonomy\n#'\n#'\n#' @format A dataframe with nodes:\n#' \\describe{\n#' \\item{Country}{Name of the country}\n#' \\item{Occupation}{Occupation according to the taxonomy of Pantheon}\n#' \\item{Value}{ Quantity of globally famous people that were born in that country} \n#' }\n#' @source Raw data before the aggregation was queried from \n#' \\url{http://www.scimagojr.com/} in 2016.\n#' @references SCImago. (2007). SJR-SCImago Journal & Country Rank.\n#' @keywords dataset\n#' @examples\n#' data(scimago)\n#' str(scimago)\n#' summary(scimago)\n#' pantheon[pantheon$Country==\"Chile\",]\n\"pantheon\"\n#'\n#'\n#'\n#' rs_ucsd\n#'\n#'\n#' @format An igraph object:\n#' \\describe{\n#' \\item{Country}{Name of the country}\n#' \\item{Occupation}{Occupation according to the taxonomy of Pantheon}\n#' \\item{Value}{ Quantity of globally famous people that were born in that country} \n#' }\n#' @source Research space of paper on Scientometrics \n#' \\url{http://www.scimagojr.com/} in 2016.\n#' @references Guevara,Hartmann,Aristaran, Mendoza, Hidalgo, 2016.\n#' @keywords dataset\n#' @examples\n#' \n#'\n#'#' scimago_nodes \n#'\n#'\n#' @format A dataframe with nodes:\n#' \\describe{\n#' \\item{Country}{Name of the country}\n#' \\item{Occupation}{Occupation according to the taxonomy of Pantheon}\n#' \\item{Value}{ Quantity of globally famous people that were born in that country} \n#' }\n#' @source Raw data before the aggregation was queried from \n#' \\url{http://www.scimagojr.com/} in 2016.\n#' @references SCImago. (2007). SJR-SCImago Journal & Country Rank.\n#' @keywords dataset\n#' @examples\n#' data(scimago)\n#' str(scimago)\n#' summary(scimago)\n#' pantheon[pantheon$Country==\"Chile\",]\n#' \n#' \n#' #'#' ucsd_nodes \n#'\n#'\n#' @format A dataframe with nodes of UCSD classification of Science:\n#' \\describe{\n#' \\item{Country}{Name of the country}\n#' \\item{Occupation}{Occupation according to the taxonomy of Pantheon}\n#' \\item{Value}{ Quantity of globally famous people that were born in that country} \n#' }\n#' @source Raw data before the aggregation was queried from \n#' \\url{http://www.scimagojr.com/} in 2016.\n#' @references SCImago. (2007). SJR-SCImago Journal & Country Rank.\n#' @keywords dataset\n#' @examples\n#' data(scimago)\n#' str(scimago)\n#' summary(scimago)\n#' pantheon[pantheon$Country==\"Chile\",]\n",
+    "created" : 1507040604109.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2318086959",
+    "id" : "A06AAD86",
+    "lastKnownWriteTime" : 1507225644,
+    "last_content_update" : 1507225644976,
+    "path" : "~/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/codes/rescinnet/R/data.R",
+    "project_path" : "R/data.R",
+    "properties" : {
+    },
+    "relative_order" : 10,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

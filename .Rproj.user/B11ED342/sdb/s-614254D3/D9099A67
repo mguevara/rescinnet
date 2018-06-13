@@ -1,0 +1,18 @@
+{
+    "contents" : "#match a journal name \nmatch_scimago_journal <- function(j_name)\n{\n#should load from url in Github or something\n  #return(length(j_name))\n  #print(j_name)\n  return(tolower(j_name))\n}\n\n\n\npp_data <- read.csv(\"/Users/mguevara/Downloads/1960-1989.csv\") #\n\npp_data['id_journal'] <- get_id_journal(as.vector(pp_data$Source))\n\npp_data <- pp_data[pp_data$Source != '',]\n\nsapply(pp_data[, c('Source')], function(x) match_scimago_journal(x))\n\n\nwebdat <- data.frame(x=c(1,2), y=c(3,4), z=c(5,6))\napply(dat[,c('x','z')], 1, function(x) sum(x) )\n",
+    "created" : 1480951425837.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3824472442",
+    "id" : "D9099A67",
+    "lastKnownWriteTime" : 1480960011,
+    "path" : "~/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/CODES/scimaps/R/utils.R",
+    "project_path" : "R/utils.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 7,
+    "source_on_save" : false,
+    "type" : "r_source"
+}

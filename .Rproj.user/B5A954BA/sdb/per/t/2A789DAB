@@ -1,0 +1,18 @@
+{
+    "contents" : "\nexamples_with_d3 <- function()\n{\n  library(d3plus)\n  # Some networks\n  edges_ej <- read.csv(system.file(\"data/edges.csv\", package = \"d3plus\"))\n  nodes_ej <- read.csv(system.file(\"data/nodes.csv\", package = \"d3plus\"))\n  d3plus(\"rings\",edges)\n  d3plus(\"rings\", edges, focusDropdown = TRUE)\n  d3plus(\"rings\", edges, nodes = nodes,focusDropdown = TRUE)\n  d3plus(\"network\", edges_ej)\n  nodes_ej['name'] <- nodes_ej$id\n  nodes_ej['color'] <- nodes_ej$id\n  nodes_ej['color'] <- \"#0f0\"\n  d3plus(\"network\",edges_ej, nodes=nodes_ej)\n  d3plus(\"network\",edges_ej)\n  k<-d3plus(\"network\",edges_ej, nodes=nodes_ej)\n  htmlwidgets::saveWidget(k,\"KK.html\", selfcontained = FALSE)\n  \n  \n  bubbles['color'] <- bubbles$group\n  \n  d3plus(\"tree\", bubbles)\n  # A scatter plot\n  countries <- read.csv(system.file(\"data/countries.csv\", package = \"d3plus\"))\n  d3plus(\"scatter\", countries)\n  \n  # Grouping bubbles\n  bubbles <- read.csv(system.file(\"data/bubbles.csv\", package = \"d3plus\"))\n  d3plus(\"bubbles\", bubbles)\n  \n  # Some treemaps\n  d3plus(\"tree\", countries)\n  d3plus(\"tree\", bubbles[c(\"name\",\"value\")], color=\"group\")\n  bubbles2 <- bubbles\n  bubbles2[\"color\"] <- bubbles2$group\n  bubbles2[\"grouping\"] <- TRUE\n  d3plus(\"tree\", bubbles2[c(\"name\",\"value\", \"color\", \"grouping\" )], grouping=\"TRUE\")\n  \n  d3plus(\"tree\", pub_total[pub_total$X...Cites>100,c(\"Title\", \"X...Cites\")], color=\"red\" )\n  \n  # Some lines\n  ## Not working\n  #data <- read.csv(system.file(\"data/expenses\", package = \"d3plus\"))\n  #d3plus(\"lines\", data)\n  \n  # Saving widgets\n  s <- d3plus(\"tree\", countries)\n  htmlwidgets::saveWidget(s,\"index.html\", selfcontained = FALSE)\n  ## Selfcontained= TRUE not working\n  # htmlwidgets::saveWidget(s,\"index.html\")\n  \n  \n  # A nice shiny app\n  library(shiny)\n  app <- shinyApp(\n    ui = bootstrapPage(\n      checkboxInput(\"swapNCols\",\"Swap columns\",value=FALSE),\n      d3plusOutput(\"viz\")\n    ),\n    server = function(input, output) {\n      countries <- read.csv(system.file(\"data/countries.csv\", package = \"d3plus\"))\n      output$viz <- renderD3plus({\n        d <- countries\n        if(input$swapNCols){\n          d <- d[c(1,3,2)]\n        }\n        d3plus(\"tree\",d)\n      })\n    }\n  )\n  runApp(app)\n  \n}\n",
+    "created" : 1481824987799.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1781118778",
+    "id" : "2A789DAB",
+    "lastKnownWriteTime" : 1506697798,
+    "path" : "~/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/codes/scimaps/R/exampleD3Plus.R",
+    "project_path" : "R/exampleD3Plus.R",
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 4,
+    "source_on_save" : false,
+    "type" : "r_source"
+}
