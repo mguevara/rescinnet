@@ -12,26 +12,34 @@ create_rs_ucsd <- function()
 		plot_map(file_rs = file_rdata, mean_degree = mean_degree, mst = mst, pl_seed = 72, mode="max") #pc lab utfsm seed 72 
 }
 
-#config(cl='scimago')
+#' @title Create Scimago Research Space
+#' @description Open RSpace on Scimago taxonomy, plots and returns an iGraph object. 
+#' @param data A numeric matrix with entities \eqn{i} in the rows and categories \eqn{j} in the columns. Cells show the respective value (value of abundance) of entity \eqn{i} in the category \eqn{j}. It can also be a transpose of the previous matrix, that is, a matrix with categories in the rows and entities in the columns. Yet in that case, the argument "category_row" has to be set to TRUE. The matrix must include names for the rows and the columns. The argument "data", also accepts a dataframe with three columns in the following order: entity, category and value. 
+#' 
+#' @param category_row A flag to indicate that categories are in the rows. The analysis assumes that the categories are in the columns of the matrix. If the categories are in the rows and the entities in the columns, then the argument "category_row" has to be set to TRUE. The default value is FALSE.
+#' @examples 
+#' create_rs_scimago()
+#' @return An iGraph object.
 #' @export
 create_rs_simago <- function()
 {
 	file_rdata<- "New_rs_sim_pr_1971_2010_n_-1_aw_0_jf_0_awjf_0.1_min_prod_0.RData"
 	mean_degree <- 10
-	plot_map(file_rs = file_rdata, mean_degree = mean_degree, mst = mst, pl_seed = 69, v_min_size = 10, cex=1, mode="max")
+	nodes <- load_taxonomy("scimago")
+	plot_map(file_rs = file_rdata, nodes=nodes, mean_degree = mean_degree, mst = mst, pl_seed = 69, v_min_size = 10, cex=1, mode="max")
 }
 
 
 #mode is the mode that you want to use in the graph
 #' @export
-plot_map <- function(file_rs, mean_degree=5, mode="max", mst=TRUE, pl_seed=69, prop_to_lab=0.2, cex=1, pl=TRUE, pl_mst=FALSE, title='', subtitle='Subt', v_min_size=10, v_col='orig')
+plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_seed=69, prop_to_lab=0.2, cex=1, pl=TRUE, pl_mst=FALSE, title='', subtitle='Subt', v_min_size=10, v_col='orig')
 {
 	title<- toupper(mode)
-	nodes <- load_taxonomy("scimago")
 	library("igraph")
-	path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
-	path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/UCSD/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
-	load(file.path(path_rs, file_rs)) #load complete information of the research space wanted all variables are rs_
+	#TODO, take this to the place of DATA!!! 
+	#path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
+	#path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/UCSD/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
+	#load(file.path(path_rs, file_rs)) #load complete information of the research space wanted all variables are rs_
 	#adj <- dis_categories(pantheon)
 	#pheatmap(adj, cluster_rows=FALSE, cluster_cols=FALSE)
 	#load(file_rs)
@@ -184,10 +192,10 @@ plot_map <- function(file_rs, mean_degree=5, mode="max", mst=TRUE, pl_seed=69, p
 		
 		print("Ploting threshold graph")
 		g_to_plot <- delete.edges(g, E(g)[E(g)$used < 1])
-		plot_graph_smart_2(g_to_plot, main = title, sub_add = paste(subtitle, "Seed plot: ",
+		plot_graph_smart_2(g_to_plot, nodes=nodes, main = title, sub_add = paste(subtitle, "Seed plot: ",
 			pl_seed, '| Threshold for links: ', filter-increment),lay = "fr", v_label=lab, cex = cex, v_min_size=v_min_size, v_col='orig', pdf_w = FALSE, file_name=paste('Research Space ', taxo, ' - ClColors', sep=''), pl_seed=pl_seed ) #v_col color based on community com, original = orig, NULL for the community over all the matrix
 		#ploting with other colors
-		plot_graph_smart_2(g_to_plot, main = title, sub_add = paste(subtitle, "Seed plot: ",
+		plot_graph_smart_2(g_to_plot,nodes=nodes, main = title, sub_add = paste(subtitle, "Seed plot: ",
 			pl_seed, '| Threshold for links: ', filter-increment),lay = "fr", v_label=lab, cex = cex, v_min_size=v_min_size, v_col='com', pdf_w = FALSE, file_name=paste('Research Space ', taxo, ' - ComColors', sep=''), pl_seed=pl_seed ) #v_col color based on community com, original = orig, NULL for the community over all the matrix
 		
 		#par(mfrow=c(1,2))
@@ -210,9 +218,9 @@ plot_map <- function(file_rs, mean_degree=5, mode="max", mst=TRUE, pl_seed=69, p
 #pl_seed the seed to use in the plot
 #lay the layout to use, a mnemonic fr or drl or cir
 #' @export
-plot_graph_smart_2 <- function(g, main='', sub=NULL, sub_add='', cex=1, pl_seed="69", lay='fr', v_label='com', v_size='degree', v_col='com', v_min_size=10, pdf_w=FALSE, file_name=NULL)
+plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, pl_seed="69", lay='fr', v_label='com', v_size='degree', v_col='com', v_min_size=10, pdf_w=FALSE, file_name=NULL)
 {
-	nodes = scimago_nodes
+	
 	######GRAPH PROPERTIES
 	set.seed(pl_seed)
 	if(lay=='fr') #force directed
@@ -324,6 +332,7 @@ plot_graph_smart_2 <- function(g, main='', sub=NULL, sub_add='', cex=1, pl_seed=
 	#EXPORTING PDF file
 	if(pdf_w ==TRUE)
 	{
+	  path_rs =""
 		dev_file_name <- file.path(path_rs,'RESEARCH SPACE OUTPUT', paste(file_name,'.pdf', sep=''))
 		#dev.print(pdf, file=dev_file_name, widht=6, height=3 );
 		pdf(dev_file_name, width=16, height=12, family='Helvetica', pointsize=8)

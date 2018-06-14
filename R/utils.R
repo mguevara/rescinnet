@@ -72,6 +72,10 @@ load_taxonomy <- function(taxo="scimago")
   {
     nodes <- scimago_nodes    
   }
+  if(taxo=="ucsd")
+  {
+    nodes <- ucsd_nodes
+  }
 
   return(nodes)
 }

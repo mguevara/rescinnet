@@ -13,3 +13,4 @@ License: CC BY-SA 4.0
 Repository: CRAN
 LazyData: true
 NeedsCompilation: no
+RoxygenNote: 6.0.1
