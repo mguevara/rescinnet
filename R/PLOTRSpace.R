@@ -37,9 +37,9 @@ plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_see
 	title<- toupper(mode)
 	library("igraph")
 	#TODO, take this to the place of DATA!!! 
-	#path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
+	path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
 	#path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/UCSD/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
-	#load(file.path(path_rs, file_rs)) #load complete information of the research space wanted all variables are rs_
+	load(file.path(path_rs, file_rs)) #load complete information of the research space wanted all variables are rs_
 	#adj <- dis_categories(pantheon)
 	#pheatmap(adj, cluster_rows=FALSE, cluster_cols=FALSE)
 	#load(file_rs)
