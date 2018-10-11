@@ -30,39 +30,66 @@ overlay_complete <- function(n=1, init=2007, end=2012, by=3,cum=FALSE, min_prod=
   
 }
 
-#dens_links Which links to use in the evaluation of density.  'all' 'bench' just links in benchmark, 'filter' for filtered links
-overlay_data_3 <- function(data_to_use, what_eval='share', min_to_grw =-1, min_to_dev=-1,  pl_base=TRUE, pl_base_mst=TRUE,  pl=TRUE, pl_roc=TRUE, pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=0.7, pl_num_lab = 5, rs_to_eval=NULL, rs_mean_degree=4, cex=1, pl_w_pdf=FALSE, pl_seed=69, dens_links='all')
+#' @title Get data to overlay
+#' @description this function read data in intervals, aggregate it and computes measures of normalization of the data as RCA. Also subset and filter per a list or value of producers
+#' @param data_to_use Data computed previously with get_data_to_overlay().
+#' @param nodes a data frame with all information of nodes. It must be the same used by rs_to_eval 
+#' @param produces a data frame with information of producers. It must include columns id and name  
+#' @param what_eval name of the column of the dataframe data_to_use to use in the evaluation
+#' @param min_to_grw minimum value to define the stat growing
+#' @param min_to_dev minimum value to define the state of developing
+#' @param pl_base plot
+#' @param pl_base_mst plot base with mst
+#' @param pl To plot or not to plot, 
+#' @param pl_roc to plot or not to plot roc curve
+#' @param pl_min_dens
+#' @param pl_node_sc=2.5
+#' @param pl_min_size=0.7, 
+#' @param pl_num_lab
+#' @param rs_to_eval An iGraph to overlay on data 
+#' @param rs_mean_degree
+#' @param cex
+#' @param pl_w_pdf
+#' @param pl_seed
+#' @param dens_links dens_links Which links to use in the evaluation of density.  'all' 'bench' just links in benchmark, 'filter' for filtered links
+#' @examples 
+#' overlay_data_3()
+#' @return a Data Frame to overlay.
+#' @export
+overlay_data_3 <- function(data_to_use, nodes, producers=NULL,what_eval='share', min_to_grw =-1, min_to_dev=-1,  pl_base=TRUE, pl_base_mst=TRUE,  pl=TRUE, pl_roc=TRUE, pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=0.7, pl_num_lab = 5, rs_to_eval=NULL, rs_mean_degree=4, cex=1, pl_w_pdf=FALSE, pl_seed=69, dens_links='all')
 {
-	############overlay data benchmark magp
-		#print("Loading Base Map")
-	#use this options a will, fire a will 
-	#if(dens_links=='all')
-	g_orig <- get_benchmark_map(rs = rs_to_eval, mean_degree=rs_mean_degree, pl=pl_base, pl_mst = pl_base_mst, cex=cex, pl_seed=pl_seed) #does not have filtered links, evaluate everithing
-	if(dens_links=='filter')
-		g_orig <- delete.edges(g_orig, E(g_orig)[E(g_orig)$used < 1 |  is.na(E(g_orig)$used)]) #to evaluate the poded tree
-	#print("Edges to deleeeete")
-	#print(E(g_orig)$weight_bench[is.na(E(g_orig)$weight_bench)])
-	if(dens_links=='bench')
-		g_orig <- delete.edges(g_orig, E(g_orig)[is.na(E(g_orig)$weight_bench)] ) #to evaluate only nodes that are in the benchmark map
-  
-	
+  ############overlay data benchmark magp
+  #print("Loading Base Map")
+  #use this options a will, fire a will 
+  #if(dens_links=='all')
+  # g_orig <- get_benchmark_map(rs = rs_to_eval, mean_degree=rs_mean_degree, pl=pl_base, pl_mst = pl_base_mst, cex=cex, pl_seed=pl_seed) #does not have filtered links, evaluate everithing
+  # if(dens_links=='filter')
+  #   g_orig <- delete.edges(g_orig, E(g_orig)[E(g_orig)$used < 1 |  is.na(E(g_orig)$used)]) #to evaluate the poded tree
+  # #print("Edges to deleeeete")
+  # #print(E(g_orig)$weight_bench[is.na(E(g_orig)$weight_bench)])
+  # if(dens_links=='bench')
+  #   g_orig <- delete.edges(g_orig, E(g_orig)[is.na(E(g_orig)$weight_bench)] ) #to evaluate only nodes that are in the benchmark map
+  # 
 	evaluation_data_total <- data.frame()   #to store final results
 	
-	id_producers <- unique(data_to_use$id_producer)
+	id_producers <- unique(data_to_use$producer)
+	intervals <- unique(data_to_use$interval)
 	
 	for(producer in id_producers)
 	{
+	  print(paste("Producer ", producer))
 		for(interval in intervals)
 		{
+		  print(paste("    Interval ", interval))
 			#load data interval
 			i <- match(interval, intervals) #index of parameter interval 
 			#year_s <- year_start[i]; year_e <- year_end[i] #USING NOT AGGREGATION of time
 	
 			
 			#get original blank graph
-			g <- g_orig
-			data_producer <- data_to_use[data_to_use$id_producer==producer & data_to_use$interval == interval,]
-			data_producer$id_category <- strtoi(data_producer$id_category)
+			#g <- g_orig
+			data_producer <- data_to_use[data_to_use$producer==producer & data_to_use$interval == interval,]
+			data_producer$category <- strtoi(data_producer$category)
 			#data_p <<- data_producer
 			#droplevels(data_producer$id_category)
 			#defining first form options for nodes
@@ -91,13 +118,21 @@ overlay_data_3 <- function(data_to_use, what_eval='share', min_to_grw =-1, min_t
 			if(nrow(data_producer)>0) 
 			{
 				#ACTIVE NODES ---------------------------
-				active_nodes <- as.vector(data_producer[,'id_category']) #which areas are present in the data of the producer 
-				active_nodes <- strtoi(active_nodes)
+				active_nodes <- as.vector(data_producer[,'category']) #which areas are present in the data of the producer 
+				active_nodes <- strtoi(active_nodes) #converts to integer
 				nodes_info_act <- nodes[nodes$Id %in% active_nodes,]
-				nodes_info_act <- merge(nodes_info_act, data_producer, by.x='Id', by.y='id_category')
+				nodes_info_act <- merge(nodes_info_act, data_producer, by.x='Id', by.y='category')
 				
 				#####ORDERING
+				# print("Nodes ID")
+				# print(nodes$Id)
+				# print("Active nodes")
+				# print(active_nodes)
+				# print("V(g)$name")
+				# print(V(g)$name)
 				active_nodes_g <- V(g)$name[V(g)$name %in% active_nodes] #TO GET THE order that provides iGraph
+				# print("Active_nodes_g")
+				# print(active_nodes_g)
 				nodes_info_act <- nodes_info_act[match(active_nodes_g, nodes_info_act$Id),] #reordering
 				
 				V(g)$share[V(g)$name %in% active_nodes]<- as.numeric(nodes_info_act[,'share']) 
@@ -136,12 +171,12 @@ overlay_data_3 <- function(data_to_use, what_eval='share', min_to_grw =-1, min_t
 				
 				if(nrow(und_nodes_df)>0)
 				{
-					und_nodes <- as.vector(und_nodes_df[,'id_category'])
+					und_nodes <- as.vector(und_nodes_df[,'category'])
 					#ensuring for scimago
 					und_nodes <- strtoi(und_nodes)
 					und_nodes_flag <- TRUE
 					nodes_info_und <- nodes[nodes$Id %in% und_nodes,]
-					nodes_info_und <- merge(nodes_info_und, data_producer, by.x='Id', by.y='id_category')
+					nodes_info_und <- merge(nodes_info_und, data_producer, by.x='Id', by.y='category')
 					#ordering
 					und_nodes_g <- V(g)$name[V(g)$name %in% und_nodes]
 					nodes_info_und <- nodes_info_und[match(und_nodes_g, nodes_info_und$Id), ]
@@ -151,18 +186,18 @@ overlay_data_3 <- function(data_to_use, what_eval='share', min_to_grw =-1, min_t
 				}
 				if(nrow(grw_nodes_df)>0)
 				{
-					grw_nodes <- as.vector(grw_nodes_df[,'id_category'])
+					grw_nodes <- as.vector(grw_nodes_df[,'category'])
 					grw_nodes <- strtoi(grw_nodes)
 					grw_nodes_flag <- TRUE
 					nodes_info_grw <- nodes[nodes$Id %in% grw_nodes,]
-					nodes_info_grw <- merge(nodes_info_grw, data_producer, by.x='Id', by.y='id_category')
+					nodes_info_grw <- merge(nodes_info_grw, data_producer, by.x='Id', by.y='category')
 					V(g)$growing <- NA
 					V(g)$growing[V(g)$name %in% active_nodes] <- 0
 					V(g)$growing[V(g)$name %in% grw_nodes] <- 1
 				}
 				if(nrow(dev_nodes_df)>0)
 				{
-					dev_nodes <- as.vector(dev_nodes_df[,'id_category'])
+					dev_nodes <- as.vector(dev_nodes_df[,'category'])
 					dev_nodes <- strtoi(dev_nodes)
 					V(g)$developed <- NA #only active nodes could be evaluated
 					V(g)$developed[V(g)$name %in% active_nodes] <- 0 #only active nodes could be evaluated
@@ -268,7 +303,7 @@ overlay_data_3 <- function(data_to_use, what_eval='share', min_to_grw =-1, min_t
 				if(pl_roc == TRUE)
 				{
 				  #print("Ploting ROC Curves")
-				  roc_results_prod <- plot_rocs(data_eval_roc = evaluation_roc, pl=TRUE)
+				  roc_results_prod <- plot_rocs(data_eval_roc = evaluation_roc, producers=producers, pl=TRUE)
 				}
 				
 			}#end loop i >1 means state with a previous state to evaluate
@@ -289,7 +324,7 @@ overlay_data_3 <- function(data_to_use, what_eval='share', min_to_grw =-1, min_t
 	#file_n <- file.path(path_interval_overlay,paste("DATA_EVALUATION_ROC",interval_label,"min_prod",min_prod,"samp",n, "trans", pred, ".csv"))
 	#write.csv(x=evaluation_data_total, file=file_n, row.names=FALSE)
 	#print(paste("wrote file", file_n ))
-	data_eval_roc <<- evaluation_data_total
+	#data_eval_roc <<- evaluation_data_total
 	
 	return(evaluation_data_total)
 }
@@ -521,21 +556,60 @@ plot_graph_overlay <- function(g,layout='fr',title=paste('Overlay Map -',taxo), 
 }
 
 
-#this function read data in intervals, aggregate it and computes measures of normalization of the data as RCA. Also subset and filter per a list or value of producers
-get_data_to_overlay <- function(n=10, init=2013, end=2015, by=1, cum=FALSE, min_prod=1, what_agg='wgh_jfrac', agg_fun=sum, list_prod=NaN )
+
+#' @title Get data to overlay
+#' @description this function read data in intervals, aggregate it and computes measures of normalization of the data as RCA. Also subset and filter per a list or value of producers
+#' @param n Number of samples to use. -1 for the complete number of producers.
+#' @param init an integer pointing the initial year
+#' @param end an integer pointing the final year
+#' @param by an integer describing the time window
+#' @param cum if FALSE it uses mobile time windows, otherwise it uses allways the same init year.
+#' @param min_prod minimum production to filter producers
+#' @param what_agg name of column to aggregate 'wgh_jfrac', 
+#' @param agg_fun function to aggregate, usually sum, 
+#' @param list_prod default NaN. A finite list of producers
+#' 
+#' @examples 
+#' get_data_to_overlay()
+#' @return a Data Frame to overlay.
+#' @export
+get_data_to_overlay <- function(data_interval, n=10, init=NaN, end=NaN, by=1, cum=FALSE, min_prod=1, year="year", producer, category, value, agg_fun=mean, list_prod=NaN )
 {
-  #get sample of producers
-  data_interval <- load_data_interval(init = init, end = end, agg=NaN) #without aggregation
+  #data_raw=load_raw_data(), init=NaN, end=NaN, year = 'year', producer, category, value="value", agg='mean'
+  #GET years automatically
+  if(is.na(init)){
+    init <- min(data_interval[year])
+    print("Defined min year to ")
+    print(init)
+  }
+  if(is.na(end)){
+    end <- max(data_interval[year])
+    print("Defined max year to ")
+    print(end)
+  }
+  #print("Loading Interval DATA...")
+  data <- subset(data_interval, year>= init & year<= end)
+  #print(summary(data))
+  
+  #get sample of producers FILTER
+  #data_interval <- load_data_interval(init = init, end = end, agg=NaN) #without aggregation
   num_years <- end-init
-  colnames(data_interval)[match(what_agg,colnames(data_interval))] <- 'value'
+  #changing names columns
+  colnames(data_interval)[match(year,colnames(data_interval))] <- 'year'
+  colnames(data_interval)[match(producer,colnames(data_interval))] <- 'producer'
+  colnames(data_interval)[match(category,colnames(data_interval))] <- 'category'
+  colnames(data_interval)[match(value,colnames(data_interval))] <- 'value'
+  print(names(data_interval))
   #if there is no a list of target producers
   if(is.na(list_prod)[[1]])
   {
-    #totals_producers <- aggregate(authorship_count~id_author , data_interval, FUN=sum)  
-    totals_producers <- aggregate(value~id_author, data_interval, FUN=sum)  
+    #totals_producers <- aggregate(authorship_count~id_author , data_interval, FUN=sum) 
+    print(length(data_interval$value))
+    print(length(data_interval$producer))
+    totals_producers <- aggregate(value~producer, data_interval, FUN=sum)  
     #producers accomplish min production
     #producers <- totals_producers$id_author[totals_producers$authorship_count> (num_years * min_prod)]
-    producers_ids <- totals_producers$id_author[totals_producers$value> (num_years * min_prod)] #FILTER HERE!!!!
+    producers_ids <- totals_producers$producer[totals_producers$value> (num_years * min_prod)] #FILTER HERE!!!!
     
     if(n==-1)
     {
@@ -547,60 +621,84 @@ get_data_to_overlay <- function(n=10, init=2013, end=2015, by=1, cum=FALSE, min_
   }#end sampling producers
   else
   {
-    producers_sample <<- list_prod
+    producers_sample <- list_prod
   }
   #print(paste("Number producers SAMPLE:",length(producers_sample)))
   
-  ##get intervals
-  get_intervals_overlay(year_ini=init, year_fin=end,win=by)
-  
   #data with producers choosen
-  data_sample <- subset(data_interval, id_author %in% producers_sample)  #watch out with the name of the column of producers.
+  data_sample <- subset(data_interval, producer %in% producers_sample)  #watch out with the name of the column of producers.
   
+  if(is.na(init)){
+    init <- min(data_sample[year])
+    print("Defined min year for sample to ")
+    print(init)
+  }
+  if(is.na(end)){
+    end <- max(data_sample[year])
+    print("Defined max year for sample to ")
+    print(end)
+  }
+  
+  ##get intervals
+  intervals <- get_intervals(years=data_sample$year, year_ini=init, year_fin=end,win=by)
+  
+ 
   #aggregating data for interval, producer, category, value, and calculating Shares, RCAs
   data_to_use <- data.frame()
-  for(interval in intervals)
+  for(interval in intervals$interval)
   {
-    i <- match(interval, intervals) #index of parameter interval
+    i <- match(interval, intervals$interval) #index of parameter interval
     if(cum == TRUE)
       year_s <- init
     else
-      year_s <- year_start[i]  
+      year_s <- intervals$year_start[i]  
     
-    year_e <- year_end[i] #simplify names #USING LOOONG AGGREGATION of time
+    year_e <- intervals$year_end[i] #simplify names #USING LOOONG AGGREGATION of time
+    print(year_s)
+    print(year_e)
     data_int_raw <- subset(data_sample, year >= year_s & year <= year_e)
     #data_int <- aggregate(x=data_int_raw['authorship_count'], by=list(id_author=data_int_raw$id_author, id_category = data_int_raw$subdiscipline_id), FUN=agg_fun)
-    data_int <- aggregate(x=data_int_raw['value'], by=list(id_author=data_int_raw$id_author, id_category = data_int_raw$subdiscipline_id), FUN=agg_fun) #totalof production of a producer in a category
-    total_global <- sum(data_int$value)
-    data_int <- data.frame(interval, data_int)
-    #data_prod_total <- aggregate(x=data_int['authorship_count'], by=list(id_author=data_int$id_author), FUN=sum)  #finding total production by producer
-    data_prod_total <- aggregate(x=data_int['value'], by=list(id_author=data_int$id_author), FUN=sum)  #finding total production by producer
-    #print(data_prod_total)
-    data_int <- merge(data_int,data_prod_total, by='id_author') #adding total production to the table
-    #total per category
-    colnames(data_int)[colnames(data_int)=='value.x'] <- 'value'
-    colnames(data_int)[colnames(data_int)=='value.y'] <- 'total_producer'
-    #data_int['share'] <- data_int$authorship_count.x / data_int$authorship_count.y #computing shares
-    data_int['share'] <- data_int$value / data_int$total_producer #computing shares
-    #aggregate
+    if(nrow(data_int_raw)<1)
+    {
+      print("Not enough data in interval")
+      print(interval)
+      print("I did not added to the final dataframe...")
+    }
+    else
+    {
+      data_int <- aggregate(x=data_int_raw['value'], by=list(producer=data_int_raw$producer, category = data_int_raw$category), FUN=agg_fun) #totalof production of a producer in a category
+      total_global <- sum(data_int$value)
+      data_int <- data.frame(interval, data_int)
+      #data_prod_total <- aggregate(x=data_int['authorship_count'], by=list(id_author=data_int$id_author), FUN=sum)  #finding total production by producer
+      data_prod_total <- aggregate(x=data_int['value'], by=list(producer=data_int$producer), FUN=sum)  #finding total production by producer
+      #print(data_prod_total)
+      data_int <- merge(data_int,data_prod_total, by='producer') #adding total production to the table
+      #total per category
+      colnames(data_int)[colnames(data_int)=='value.x'] <- 'value'
+      colnames(data_int)[colnames(data_int)=='value.y'] <- 'total_producer'
+      #data_int['share'] <- data_int$authorship_count.x / data_int$authorship_count.y #computing shares
+      data_int['share'] <- data_int$value / data_int$total_producer #computing shares
+      #aggregate
+      
+      data_categ_total <-  aggregate(x=data_int['value'], by=list( category = data_int$category), FUN=agg_fun) #total of that category
+      data_int <- merge(data_int, data_categ_total, by='category')
+      colnames(data_int)[colnames(data_int)=='value.x'] <- 'value'
+      colnames(data_int)[colnames(data_int)=='value.y'] <- 'total_category'
+      
+      data_int['total_global'] <- total_global
+      data_int['share_category'] <- data_int$total_category / total_global
+      data_int['rca'] <- data_int$share/data_int$share_category
+      data_int['rca_bool'] <- data_int['rca']
+      data_int$rca_bool[data_int$rca_bool < 1] <- 0
+      data_int$rca_bool[data_int$rca_bool != 0] <- 1
+      
+      data_to_use <- rbind(data_to_use,data_int)
+    }
     
-    data_categ_total <-  aggregate(x=data_int['value'], by=list( id_category = data_int$id_category), FUN=agg_fun) #total of that category
-    data_int <- merge(data_int, data_categ_total, by='id_category')
-    colnames(data_int)[colnames(data_int)=='value.x'] <- 'value'
-    colnames(data_int)[colnames(data_int)=='value.y'] <- 'total_category'
-    
-    data_int['total_global'] <- total_global
-    data_int['share_category'] <- data_int$total_category / total_global
-    data_int['rca'] <- data_int$share/data_int$share_category
-    data_int['rca_bool'] <- data_int['rca']
-    data_int$rca_bool[data_int$rca_bool < 1] <- 0
-    data_int$rca_bool[data_int$rca_bool != 0] <- 1
-    
-    data_to_use <- rbind(data_to_use,data_int)
   	
   }
   
-	colnames(data_to_use)[colnames(data_to_use) == 'id_author'] <- 'id_producer'
+	#colnames(data_to_use)[colnames(data_to_use) == 'id_author'] <- 'id_producer'
 	
   return(data_to_use)
   #________________________
@@ -608,9 +706,17 @@ get_data_to_overlay <- function(n=10, init=2013, end=2015, by=1, cum=FALSE, min_
 
 #evaluate roc curves
 #evaluate roc for each producer
-plot_rocs <- function(data_eval_roc, pl=FALSE)
+#' @title Evaluate roc curves
+#' @description evaluate roc curves for each producer
+#' @param data_eval_roc a data frame processed previously with plot roc
+#' @param producers a data frame with producers
+#' @examples 
+#' plot_rocs()
+#' @return a Data Frame to overlay.
+#' @export
+plot_rocs <- function(data_eval_roc, producers=NULL, pl=FALSE)
 {
-  require(MESS) #getting area under the curve
+  library("MESS") #getting area under the curve
   
   intervals_pred <- unique(data_eval_roc$interval)
   data_eval_roc_act <- data.frame()
@@ -697,7 +803,7 @@ plot_rocs <- function(data_eval_roc, pl=FALSE)
 	      	#labaling entitlining main template of roc curves
 	      prev_interval <- data_eval_prod$prev_interval[1]
 	      what_eval <- toupper(data_eval_prod$what_eval[1])
-	      mtext(paste(get_prod_name(prod), "| From: ", prev_interval, "To:", inter, "| Evaluating:", what_eval), side=3, outer=TRUE, line=-3)
+	      mtext(paste(get_prod_name(prod, producers), "| From: ", prev_interval, "To:", inter, "| Evaluating:", what_eval), side=3, outer=TRUE, line=-3, cex=0.5)
       }
       
       roc_prod <- rbind(roc_prod, roc_int) #accumulates intervals for the same producer
@@ -706,8 +812,8 @@ plot_rocs <- function(data_eval_roc, pl=FALSE)
   }#end for producer
   
   
-  roc_kk<<- roc_total
-  data_eval_roc_used <<- data_eval_roc_act
+  #roc_kk<<- roc_total
+  #data_eval_roc_used <<- data_eval_roc_act
   return(roc_total)
 }
 
@@ -773,13 +879,74 @@ plot_roc_interval <- function(data_eval_sor, positive, trans="", col="skyblue", 
      
 }
 
-
-get_prod_name <- function(id_prod)
+#' @title Get the name of a producer
+#' @description this function returns the name of a producer based on an id defined by id_prod.
+#' @param id_prod an identifier for a producer.
+#' @param producers a dataframe with columns information of producers, it must contain column id and ideally name.
+#' @examples 
+#' get_prod_name()
+#' @return a name for the producer, based on its id. It returns the id in case the column name was not found.
+#' @export
+get_prod_name <- function(id_prod, producers)
 {
-	return(prod_name <- as.character(producers$name[producers$id==id_prod]))
+  if(is.null(producers)==TRUE)
+  {
+    return(id_prod)
+  }  
+  else{
+	  return(prod_name <- as.character(producers$name[producers$id==id_prod]))
+  }
 }
+
 get_prod_domain <- function(id_prod)
 {
 	prod_domain <- as.character(producers$i.domain[producers$id==id_prod])
+}
+
+
+#' @export
+plot_box <- function(data_auc_total)
+{
+  colors <- c('brown','orange','skyblue')
+  #linetype <- c(1,1, c(1:(n_eval-2)))
+  #plotchar <- c(1:n_eval)
+  producers_ax <- unique(data_auc_total$prod)
+  prev_int <- data_auc_total$prev_interval[1]
+  interval <- data_auc_total$inter[[1]]
+  #data_auc_total$map <- strtrim(data_auc_total$map, 4)
+  #starting evaluation plots
+ 
+    par(mfrow=c(1,3)) #starts template for roc plots 
+
+  
+  boxplot(auc_I_A~map, data=data_auc_total, ylab='AUC Inactive to Active', border=colors[1])
+  #aov_I_A <- aov(auc_I_A~map, data=data_auc_total)
+  
+  #print("ANOVA Analysis for Inactive to Active transition")
+  #print(summary(aov_I_A))
+  
+
+    boxplot(auc_G_D~map, data=data_auc_total, ylab='AUC Growing to Developed', border=colors[2])
+    #aov_G_D <- aov(auc_G_D~map, data=data_auc_total)
+    #print("ANOVA Analysis for Growing to Developed transition")
+    #print(summary(aov_G_D))
+    
+    boxplot(auc_U_D~map, data=data_auc_total, ylab='AUC Undeveloped to Developed', border=colors[3])
+    
+    #aov_U_D <- aov(auc_U_D~map, data=data_auc_total)
+    #print("ANOVA Analysis for Undeveloped to Developed transition")
+    #print(summary(aov_U_D))
+    
+
+  
+  #plot.new()
+  #legend <- paste(maps_eval[1:n_eval,'map'], '|', 
+  #round(maps_eval[1:n_eval,'auc_I_A'],3), '|',
+  #round(maps_eval[1:n_eval,'auc_G_D'],3), '|',
+  #round(maps_eval[1:n_eval,'auc_U_D'],3))
+  
+  #legend("topleft", legend=legend,   title="Map | avg(AUC_I_A) | avg(AUC_G_D) | avg(AUC_U_D)")
+  #print(legend)
+  
 }
 

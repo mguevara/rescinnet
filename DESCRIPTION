@@ -3,9 +3,9 @@ Title: Research, Science and Innovation Networks
 Version: 0.0.1
 Author: Miguel R. Guevara <miguel.guevara@upla.cl>
 Maintainer: Miguel R. Guevara <miguel.guevara@upla.cl>
-Description: Analysis and mapping of research, science and innovation over Networks (maps). Common tasks such as: plotting, overlaying and predicting.
-Depends: diverse, igraph
-Suggests: pheatmap
+Description: Analysis and mapping of research, science and innovation Networks (maps). Common tasks such as: plotting, overlaying and predicting.
+Depends: igraph, MESS
+Suggests: pheatmap, diverse
 URL: https://github.com/mguevara/rescinnet
 Date: 2018-06-13
 BugReports: https://github.com/mguevara/rescinnet/issues

@@ -7,9 +7,10 @@ create_rs_ucsd <- function()
 {
 	file_rdata<- "New_rs_sim_pr_1971_2010_n_-1_aw_0_jf_0_awjf_0.1_min_prod_0.RData"
 	mean_degree <- 10
+	nodes <- load_taxonomy("ucsd")
 	#for(pl_seed in c(113,155,799,19,70,72)) to make a search for the most similar to the SCIMago 72
 	#	plot_rs_final(file_rs = file_rdata, mean_degree = mean_degree, mst = mst, pl_seed = pl_seed, mode="max")
-		plot_map(file_rs = file_rdata, mean_degree = mean_degree, mst = mst, pl_seed = 72, mode="max") #pc lab utfsm seed 72 
+		plot_map(file_rs = file_rdata, nodes=nodes, mean_degree = mean_degree, mst = mst, pl_seed = 72, mode="max") #pc lab utfsm seed 72 
 }
 
 #' @title Create Scimago Research Space
@@ -37,8 +38,8 @@ plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_see
 	title<- toupper(mode)
 	library("igraph")
 	#TODO, take this to the place of DATA!!! 
-	path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
-	#path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/UCSD/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
+	#path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/SCIMAGO/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
+	path_rs <- "/Users/mguevara/Dropbox/doctorado/MIT_PROJECT/TESIS_RESEARCH_SPACE/DATA/RESEARCH_SPACE/UCSD/RESEARCH\ SPACE\ OUTPUT" #HARD CODED
 	load(file.path(path_rs, file_rs)) #load complete information of the research space wanted all variables are rs_
 	#adj <- dis_categories(pantheon)
 	#pheatmap(adj, cluster_rows=FALSE, cluster_cols=FALSE)
@@ -181,7 +182,7 @@ plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_see
 	
 
 		lab='com'
-	
+	  #nodes = ucsd_nodes #HARD CODED
 		if(length(V(g)) < (prop_to_lab * length(rownames(nodes))) )
 			lab='all'
 		title= paste("MST+Threshold ",title, "\nMean degree:", mean_degree, "SEED", pl_seed) 
@@ -220,7 +221,7 @@ plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_see
 #' @export
 plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, pl_seed="69", lay='fr', v_label='com', v_size='degree', v_col='com', v_min_size=10, pdf_w=FALSE, file_name=NULL)
 {
-	
+	#nodes = ucsd_nodes #HARD CODED!!
 	######GRAPH PROPERTIES
 	set.seed(pl_seed)
 	if(lay=='fr') #force directed
@@ -295,7 +296,8 @@ plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, p
 	#tkconfigure(igraph:::.tkplot.get(id)$canvas, "bg"="black")
 	par(lend = 1)           # square line ends for the color legend
 	#areas_df <- subset(nodes, select=c('Discipline','color'))
-	nodes["Discipline"] <- nodes$area_name #HARDCODED!
+	#nodes["Discipline"] <- nodes$area_name #HARDCODED! for scimago
+	nodes["Discipline"] <- nodes$disc_name #HARDCODED! for ucsd
 	areas_df <- subset(nodes, select=c('Discipline','color'))
 	areas_df <-unique(areas_df)
 	areas_df$color <- factor(areas_df$color)
