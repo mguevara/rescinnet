@@ -329,9 +329,385 @@ overlay_data_3 <- function(data_to_use, nodes, producers=NULL,what_eval='share',
 	return(evaluation_data_total)
 }
 
+
+
+#' @title Overlay data of one or several producers
+#' @description this function read data processed with Overlay Data 3 and then plots an overlaid map according several configurations
+#' @param data_to_use Data computed previously with get_data_to_overlay().
+#' @param nodes a data frame with all information of nodes. It must be the same used by rs_to_eval 
+#' @param produces a data frame with information of producers. It must include columns id and name  
+#' @param what_eval name of the column of the dataframe data_to_use to use in the evaluation
+#' @param min_to_grw minimum value to define the stat growing
+#' @param min_to_dev minimum value to define the state of developing
+#' @param pl_base plot
+#' @param pl_base_mst plot base with mst
+#' @param pl To plot or not to plot, 
+#' @param pl_roc to plot or not to plot roc curve
+#' @param pl_min_dens
+#' @param pl_node_sc=2.5
+#' @param pl_min_size=0.7, 
+#' @param pl_num_lab
+#' @param rs_to_eval An iGraph to overlay on data 
+#' @param rs_mean_degree
+#' @param cex
+#' @param pl_w_pdf
+#' @param pl_seed
+#' @param dens_links dens_links Which links to use in the evaluation of density.  'all' 'bench' just links in benchmark, 'filter' for filtered links
+#' @examples 
+#' overlay_data_3()
+#' @return a Data Frame to overlay.
+#' @export
+overlay_producers <- function(data_to_use, nodes, producers=NULL, id_producers = NULL,  pl_base=TRUE, pl_base_mst=TRUE,  pl=TRUE, pl_roc=TRUE, pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=0.7, pl_num_lab = 5, rs_to_eval=NULL, rs_mean_degree=4, cex=1, pl_w_pdf=FALSE, pl_seed=69, dens_links='all')
+{
+  
+  evaluation_data_total <- data.frame()   #to store final results
+  
+  if(is.null(id_producers)){
+    id_producers <- unique(data_to_use$producer)  #all the producers on the dataframe  
+  }
+  
+  intervals <- unique(data_to_use$interval)
+  
+  for(producer in id_producers)
+  {
+    print(paste("Producer ", producer))
+    for(interval in intervals)
+    {
+      print(paste("    Interval ", interval))
+      #load data interval
+      i <- match(interval, intervals) #index of parameter interval 
+      #year_s <- year_start[i]; year_e <- year_end[i] #USING NOT AGGREGATION of time
+      
+      
+      #get original blank graph
+      #g <- g_orig
+      data_producer <- data_to_use[data_to_use$producer==producer & data_to_use$interval == interval,]
+      data_producer$category <- strtoi(data_producer$V.g..name) #INTEGER!!!
+      #data_p <<- data_producer
+      #droplevels(data_producer$id_category)
+      #defining first form options for nodes
+      g$producer <- producer
+      g$interval <- interval
+      g$what_eval <- data_to_use$what_eval[[1]]
+      g$cut_off_to_grw <- 0.5
+      g$cut_off_to_dev <- 1
+      cut_off_to_grw <-0.5
+      cut_off_to_dev <- 1
+      
+      dev_nodes_flag <- FALSE
+      grw_nodes_flag <- FALSE
+      und_nodes_flag <- FALSE
+      V(g)$developed <- data_producer$V.g..developed
+      V(g)$active <- data_producer$V.g..active
+      
+      active_nodes = data_producer[data_producer$V.g..active==1,"category"]
+      active_nodes <- strtoi(active_nodes) #converts to integer
+      
+      grw_nodes_df <- data_producer[data_producer$V.g..value_eval>= cut_off_to_grw &data_producer$V.g..value_eval < cut_off_to_dev,] #grwoing nodes
+      und_nodes_df <- data_producer[data_producer$V.g..value_eval< cut_off_to_grw,] #undeveloped nodes
+      if(nrow(und_nodes_df)>0)
+      {
+        und_nodes <- as.vector(und_nodes_df[,'category'])
+        #ensuring for scimago
+        und_nodes <- strtoi(und_nodes)
+        nodes_info_und <- nodes[nodes$Id %in% und_nodes,]
+        nodes_info_und <- merge(nodes_info_und, data_producer, by.x='Id', by.y='category')
+        #ordering
+        und_nodes_g <- V(g)$name[V(g)$name %in% und_nodes]
+        nodes_info_und <- nodes_info_und[match(und_nodes_g, nodes_info_und$Id), ]
+        V(g)$undeveloped <- NA #only active nodes could be evaluated
+        V(g)$undeveloped[V(g)$name %in% active_nodes] <- 0 #only active nodes could be evaluated
+        V(g)$undeveloped[(V(g)$name %in% und_nodes)] <- 1 #is it UNoccupied
+      }
+      if(nrow(grw_nodes_df)>0)
+      {
+        grw_nodes <- as.vector(grw_nodes_df[,'category'])
+        grw_nodes <- strtoi(grw_nodes)
+        nodes_info_grw <- nodes[nodes$Id %in% grw_nodes,]
+        nodes_info_grw <- merge(nodes_info_grw, data_producer, by.x='Id', by.y='category')
+        V(g)$growing <- NA
+        V(g)$growing[V(g)$name %in% active_nodes] <- 0
+        V(g)$growing[V(g)$name %in% grw_nodes] <- 1
+      }
+      
+      #V(g)$undeveloped <- 
+      #V(g)$growing <- data_producer$
+      #V(g)$density <- data_producer$V.g..value_eval
+      V(g)$density_2 <- 0 #using all the matrix of similarities
+      active_nodes <- NA
+      grw_nodes <- NA
+      und_nodes <- NA
+      dev_nodes <- NA
+      sum_production <- NA
+      variety <- NA
+      measures <- NA
+      
+      #verify that info of producer for this time is not empty
+      if(nrow(data_producer)>0) 
+      {
+        #ACTIVE NODES ---------------------------
+        #active_nodes <- as.vector(data_producer[,'category']) #which areas are present in the data of the producer 
+        active_nodes = data_producer[data_producer$V.g..active==1,"category"]
+        active_nodes <- strtoi(active_nodes) #converts to integer
+        nodes_info_act <- nodes[nodes$Id %in% active_nodes,]
+        nodes_info_act <- merge(nodes_info_act, data_producer, by.x='Id', by.y='category')
+        
+        #####ORDERING
+        # print("Nodes ID")
+        # print(nodes$Id)
+        # print("Active nodes")
+        # print(active_nodes)
+        # print("V(g)$name")
+        # print(V(g)$name)
+        active_nodes_g <- V(g)$name[V(g)$name %in% active_nodes] #TO GET THE order that provides iGraph
+        # print("Active_nodes_g")
+        # print(active_nodes_g)
+        nodes_info_act <- nodes_info_act[match(active_nodes_g, nodes_info_act$Id),] #reordering
+        
+        V(g)$share[V(g)$name %in% active_nodes]<- as.numeric(nodes_info_act[,'size']) #share in the original 
+        V(g)$value_eval[V(g)$name %in% active_nodes]<- as.numeric(nodes_info_act[,"V.g..value_eval"]) 
+        V(g)$names_actives[V(g)$name %in% active_nodes] <- as.character(nodes_info_act$subd_name)
+        #V(g)$size[is.na(V(g)$size)] <- pl_min_size  #deliting size of 
+        # vg_df_actives <<- as.data.frame(list( name=V(g)$name, shares=V(g)$shares, size=V(g)$size,names_actives=V(g)$names_actives,color= V(g)$color), stringsAsFactors = FALSE)
+        
+       
+        
+        
+      }#end no data production
+      else
+      {
+        #DEFINE ZERO for a period without data, this is needed because otherwise it is impossible to plot the graph
+        print(paste("NO DATA HERE!! For producer:", producer, "INterval:", interval))
+        #go to next interval since there is no data
+        #flag_no_data_user <- TRUE
+        break #jump next interval
+      }
+      
+     
+          #pending plot if needed
+          #Pass evaluation
+          par(mfrow=c(1,1)) #starts template for roc plots 
+         # plot_overlay_data(g_prev, pl_min_dens=pl_min_dens, pl_node_sc=pl_node_sc, pl_min_size=pl_min_size, pl_num_lab = pl_num_lab, cex=cex, pl_w_pdf = pl_w_pdf)
+          
+          plot_overlay_data(g, pl_min_dens=pl_min_dens, pl_node_sc=pl_node_sc, pl_min_size=pl_min_size, pl_num_lab = pl_num_lab, cex=cex, pl_w_pdf = pl_w_pdf, producers=producers)
+          #print("Here plotting!")
+       
+        
+        
+        if(pl_roc == TRUE)
+        {
+          #print("Ploting ROC Curves")
+          roc_results_prod <- plot_rocs(data_eval_roc = evaluation_roc, producers=producers, pl=TRUE)
+        }
+     
+      
+      prev_num_act <- length(na.omit(active_nodes)) #any production 
+    }#end interval
+    
+    #if(flag_no_data_user == TRUE)
+    #	next #jump next user if no data for user in interval
+  }#end producers
+  
+  #evaluating data of 
+  
+  #file_n <- file.path(path_interval_overlay,paste("DATA_EVALUATION_ROC",interval_label,"min_prod",min_prod,"samp",n, "trans", pred, ".csv"))
+  #write.csv(x=evaluation_data_total, file=file_n, row.names=FALSE)
+  #print(paste("wrote file", file_n ))
+  #data_eval_roc <<- evaluation_data_total
+  
+  return(evaluation_data_total)
+}
+
+#used to plot overlay maps over benchmark maps
+plot_graph_overlay <- function(g,title=paste('Overlay Map -',taxo), subtitle='', file_name=paste('Overlay Map -',taxo), legend=NULL, l_pt.bg,l_col, cex=1, pl_w_pdf=FALSE )
+{
+  
+  info_credit <- 'info'
+  info_template<- 'fr'
+  info_interval <- '2001'
+  
+  plot.igraph(g, 
+              sub=list(paste(subtitle),cex=0.7*cex), 
+              vertex.label.cex=0.6*cex, 
+              vertex.label.font=0, 
+              vertex.label.family='Helvetica', 
+              vertex.label.color='black', 
+              edge.label.cex=0.5*cex, 
+              edge.label.font=0, 
+              edge.label.family='Helvetica', 
+              main=list(title,cex=0.9*cex), 
+              asp=FALSE)
+  #dev.off()
+  legend("bottomleft",      # location of the legend on the heatmap plot
+         legend = legend,
+         pch=21, merge=FALSE,
+         #pch=19, merge=FALSE,
+         pt.bg = l_pt.bg,
+         col = l_col,
+         #lty= c(1,1,1,1,NA),             # line style
+         lty= NA,             # line style
+         lwd = 1,           # line width
+         #lwd = NA,           # line width
+         pt.cex = 0.8*cex,
+         box.col = "lightgrey",
+         #fill = "white"
+         cex= 0.6*cex
+  )
+  
+  if(pl_w_pdf==TRUE)
+  {
+    dev_file_name <- file.path(path_interval_overlay, paste(file_name,'.pdf', sep=''))
+    #dev.print(pdf, file=dev_file_name, widht=6, height=3 );
+    pdf(dev_file_name, width=16, height=12, family='Helvetica', pointsize=8)
+    #, edge.label.color='black'
+    
+    plot.igraph(g, 
+                sub=list(paste(subtitle), cex=0.8*cex), 
+                vertex.label.cex=1.4*cex, 
+                vertex.label.font=0, 
+                vertex.label.family='Helvetica',  
+                vertex.label.color='black',  
+                edge.label.cex=0.5*cex, 
+                edge.label.font=0,
+                edge.label.family='Helvetica', 
+                main=title, 
+                asp=FALSE)
+    
+    legend("bottomleft",      # location of the legend on the heatmap plot
+           legend = legend,
+           pch=21, merge=FALSE,
+           pt.bg = l_pt.bg,
+           col = l_col,
+           #lty= c(1,1,1,1,NA),             # line style
+           lty = NA,
+           lwd = 0,           # line width
+           pt.cex = 4,
+           box.col = "lightgrey",
+           #fill = "white"
+           cex= 2
+    )
+    
+    dev.off()
+    #dev.copy(pdf,filename=dev_file_name, family='Helvetica');
+    #dev.off ();
+  }
+  
+  
+}
+
 #plots data overlaid and evaluated using density and transitions
 #g graph containing transitions ande previous states
-plot_overlay_data <- function(g,  pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=0.7, pl_num_lab = 5, prop_to_lab=0.2, cex=1, pl_w_pdf=FALSE)
+plot_overlay_data <- function(g,  pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=0.7, pl_num_lab = 5, prop_to_lab=0.2, cex=1, pl_w_pdf=FALSE, producers=producers)
+{
+  #color palette <- INactive, Active, Growing, Advantage, Opportunity
+  #green palette
+  #color_palette <- c('#edf8e9', '#bae4b3', '#74c476', '#238b45','white','blue' )
+  #yellow-red heat palette 
+  #color_palette <- c('#ededed', '#fecc5c', '#fd8d3c','#e31a1c', 'white', 'green')
+  color_palette <- c('#ededed', '#fecc5c', '#fd8d3c','#e31a1c', 'white', 'blue')
+  node.colors <- c("white", rev(heat.colors(3)), "white") # from empty to developed 4 states
+  edge.colors <- c('#ededed', '#ededed', '#ededed', "#bcbcbc", "#bcbcbc" ) #from inactive, connecting active, connecting developed
+  frame.colors <- c('#ededed', '#ededed', '#ededed', "#bcbcbc",  "black") #from base, to recommended, to True Positive
+  
+  #defining some values
+  num_dragons <- length(V(g)$ts_dragons[V(g)$ts_dragons==1 & !is.na(V(g)$ts_dragons)])
+  num_introduction <-  length(V(g)$ts_introduction[V(g)$ts_introduction==1 & !is.na(V(g)$ts_introduction)])
+  num_growth <-  length(V(g)$ts_growth[V(g)$ts_growth==1 & !is.na(V(g)$ts_growth)])
+  num_maturity <-  length(V(g)$ts_maturity[V(g)$ts_maturity==1 & !is.na(V(g)$ts_maturity)])
+  num_decline <- length(V(g)$ts_decline[V(g)$ts_decline==1 & !is.na(V(g)$ts_decline)] )
+  num_activated <- length(V(g)$ts_activated[V(g)$ts_activated==1 & !is.na(V(g)$ts_activated)] )
+  num_transition <- length(V(g)$ts_transition[V(g)$ts_transition==1 & !is.na(V(g)$ts_transition)] )
+  
+  #setting default values for vertices 
+  V(g)$color <- node.colors[1]
+  V(g)$frame.color <- frame.colors[1]
+  V(g)$size <- pl_min_size
+  #print(paste("HEREE MIn size", pl_min_size))
+  #V(g)$label_orig <- V(g)$label  #to export
+  V(g)$Label = as.character(nodes$subd_name[match(V(g)$name, nodes$Id)]) #watch out with the name of the column!!
+  V(g)$label <- ''
+  #setting default values for edges
+  E(g)$color <- edge.colors[2] #coloring edges connecting active nodes
+  
+  #ACTIVE NODES  ######
+  active_nodes <- V(g)$name[V(g)$active == 1]
+  V(g)$color[V(g)$name %in% active_nodes] <- node.colors[2]
+  #V(g)$share[V(g)$name %in% active_nodes]<- as.numeric(nodes_info_act[,'share']) 
+  max_share <- max(V(g)$share, na.rm=TRUE);	min_share <- min(V(g)$share, na.rm=TRUE)
+  #print(paste("max", max_share, "min", min_share))
+  #V(g)$size[V(g)$name %in% active_nodes] <-  V(g)$share[V(g)$name %in% active_nodes]
+  V(g)$size[V(g)$name %in% active_nodes] <- (((V(g)$share[V(g)$name %in% active_nodes] - min_share )/(max_share-min_share) ) + pl_min_size) * pl_node_sc
+  
+  #UNDEVELOPED NODES
+  und_nodes <- V(g)$name[V(g)$undeveloped == 1]
+  
+  #GROWING NODES  #####
+  grw_nodes <- V(g)$name[V(g)$growing == 1]
+  V(g)$color[V(g)$name %in% grw_nodes] <- node.colors[3]
+  
+  
+  #DEVELOPED NODES #######
+  dev_nodes <- V(g)$name[V(g)$developed == 1]
+  V(g)$color[V(g)$name %in% dev_nodes] <-node.colors[4]
+  if(length(dev_nodes)>0)
+  {
+    #labeling all edges from recommended nodes
+    #E(g)$label[ E(g)[from (V(g)[V(g)$density>pl_min_dens]) ] ] <-  E(g)$weight[ E(g)[from (V(g)[V(g)$density>pl_min_dens]) ] ] #bug here, something happen 
+    E(g)$color[E(g)$weight_bool==1] <- edge.colors[4] #coloring edges connecting active nodes
+    #if(length(dev_nodes) < (prop_to_lab * length(rownames(nodes))) )
+    # V(g)$label = as.character(nodes$subd_name[match(V(g)$name, nodes$Id)]) #watch out with the name of the column!!
+    #else
+    #{
+    #print("Filtering labels...")
+    nod_max_com <- get_max_com(g)  #get the nodes with max degree per community
+    #print(nod_max_com)
+    V(g)$label <- ''
+    #V(g)$label[V(g)$name %in% nod_max_com] <- as.character(nodes$subd_name[match(nod_max_com, nodes$Id)])
+    nodes_to_label <- V(g)$name[V(g)$name %in% intersect(nod_max_com,dev_nodes)] #to get the order of iGraph
+    V(g)$label[V(g)$name %in% intersect(nod_max_com,dev_nodes)] <- as.character(nodes$subd_name[match(nodes_to_label, nodes$Id)])
+    #}
+    
+  }
+  
+  #LEGEND AND TITLES ###
+  #MUST USE AS.CHARACTER, OTHERWISE it will take an integer resulting in extrange colors
+  #V(g)$color[V(g)$name %in% active_nodes_density_lab] <- as.character(nodes_info_density$color)
+  num_act <- length(na.omit(active_nodes)) #any production 
+  num_dev <- length(na.omit(dev_nodes)) #developed area
+  num_grw <- length(na.omit(grw_nodes)) #growing area
+  num_und <- length(na.omit(und_nodes)) #underdeveloped area 
+  num_ina <- vcount(g)-num_act
+  measures <- paste('Undeveloped <', round(g$cut_off_to_grw, 4),  '< Growing Areas <', round(g$cut_off_to_dev, 4), 'Developed Areas', '\n')
+  
+  
+  #titles
+  prod_name <- get_prod_name(g$producer, producers)
+  prod_domain <- get_prod_domain(g$producer, producers)
+  taxo="UCSD"
+  dataset= "GScholar"
+  title <- paste( prod_name," ", g$interval,  '\nTaxonomy: ', taxo, ' - Overlay Data: ', dataset, " - Evaluating: ", toupper(g$what_eval),sep="")
+  #file_name <- paste('OverlayMap', taxo, prod_domain,g$interval, g$what_eval, sep='_')
+  file_name <- paste(prod_name,g$interval, g$what_eval, sep='_')
+  file_name <- paste(file_name,".pdf",sep="")
+  #subtitle <- paste('Layout: Frughtermand Rengold', '| Size: Share of authorships', '| Color: Areas of Science (original colors) \n' , measures, '\n', evaluation)
+  subtitle <- paste('Layout: Fruchterman–Reingold', '| Size: Share of authorships', '| Color: Values of ', toupper(g$what_eval), " \n Agg. function: ", "sum", '\n' , measures)
+  #exporting graph to a dataframe
+  #V(g)$cut_off_to_dev <- cut_off_to_dev
+  #vg_final<<- data.frame(  V(g)$name, V(g)$label, V(g)$color, V(g)$active,V(g)$inactive,V(g)$size, V(g)$shares, V(g)$cut_off_to_dev, V(g)$developed, V(g)$undeveloped )#
+  par(lend = 1)           # square line ends for the color legend
+  legend = c(paste("Inactive", num_ina), paste("Nascent", num_und), paste("Intermediate", num_grw), paste("Developed", num_dev)) # category labels   
+  
+  plot_graph_overlay(g, title = title , subtitle=subtitle, file_name=file_name, legend=legend, l_pt.bg=node.colors, l_col=frame.colors, cex=cex, pl_w_pdf=pl_w_pdf )
+  
+  #plotting smart, use own to use previous defined size
+  out_dir = "/Users/mguevara/Dropbox/UPLA/INVESTIGACION/proyectos/BRAZIL-RSPACE/DATA/OUTPUT/UNIVERSITIES/OVERLAYS/41"
+  plot_graph_smart_2(g=g, nodes=nodes, main=title, sub='',legend=legend, v_col="own", v_size = "own", cex = cex, v_label = 'no', file_name = file.path(out_dir, file_name))
+  
+}
+
+#plots data overlaid and evaluated using density and transitions
+#g graph containing transitions ande previous states
+plot_overlay_data_densities <- function(g,  pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=0.7, pl_num_lab = 5, prop_to_lab=0.2, cex=1, pl_w_pdf=FALSE, producers)
 {
 	#color palette <- INactive, Active, Growing, Advantage, Opportunity
 	#green palette
@@ -439,10 +815,11 @@ plot_overlay_data <- function(g,  pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=
 
 		
 		#titles
-		prod_name <- get_prod_name(g$producer)
-		prod_domain <- get_prod_domain(g$producer)
-		title <- paste( prod_name," ", g$interval,  '\nBase Map: ', taxo, ' - Overlay Data: ', dataset, " - Evaluating: ", toupper(g$what_eval),sep="")
-		file_name <- paste('OverlayMap', taxo, prod_domain,g$interval, g$what_eval, sep='_')
+		prod_name <- get_prod_name(g$producer, producers)
+		prod_domain <- get_prod_domain(g$producer, producers)
+		dataset = "Google Scholar"
+		title <- paste( prod_name," ", g$interval,  '\nBase Map: ', ' - Overlay Data: ', dataset, " - Evaluating: ", toupper(g$what_eval),sep="")
+		file_name <- paste('OverlayMap', prod_domain,g$interval, g$what_eval, sep='_')
 		#subtitle <- paste('Layout: Frughtermand Rengold', '| Size: Share of authorships', '| Color: Areas of Science (original colors) \n' , measures, '\n', evaluation)
 		subtitle <- paste('Layout: Fruchterman–Reingold', '| Size: Share of authorships', '| Color: Values of ', toupper(g$what_eval), " \n Agg. function: ", "sum", '\n' , measures)
 		#exporting graph to a dataframe
@@ -450,110 +827,12 @@ plot_overlay_data <- function(g,  pl_min_dens=0.15, pl_node_sc=2.5, pl_min_size=
 		#vg_final<<- data.frame(  V(g)$name, V(g)$label, V(g)$color, V(g)$active,V(g)$inactive,V(g)$size, V(g)$shares, V(g)$cut_off_to_dev, V(g)$developed, V(g)$undeveloped )#
 		par(lend = 1)           # square line ends for the color legend
 		legend = c(paste("Inactive", num_ina), paste("Undeveloped", num_und), paste("Growing", num_grw), paste("Developed", num_dev), paste("Opportunity", num_rcm)) # category labels   
+		
 		plot_graph_overlay(g, layout='fr', title = title , subtitle=subtitle, file_name=file_name, legend=legend, l_pt.bg=node.colors, l_col=frame.colors, cex=cex, pl_w_pdf=pl_w_pdf )
 		
 }
 
 
-#used to plot overlay maps over benchmark maps
-plot_graph_overlay <- function(g,layout='fr',title=paste('Overlay Map -',taxo), subtitle='', file_name=paste('Overlay Map -',taxo), legend=NULL, l_pt.bg,l_col, cex=1, pl_w_pdf=FALSE )
-{
-	set.seed(77)
-	#gms$layout <- layout.drl(gms)
-	#plotMST(gms,'drl')
-	#gms$layout <- layout.auto(gms)
-	#plotMST(gms,'auto')
-	#gms$layout <- layout.circle(gms)
-	#plotMST(gms,'circle')
-	if(layout=='fr')
-	{
-		g$layout <- layout.fruchterman.reingold(g) 
-		lay <- 'Fruchterman Reingold'
-	}
-	
-	#V(g)$Label = as.character(nodes$subd_name[match(V(g)$name, nodes$Id)]) #watch out with the name of the column!!
-	#higher aggregation
-	#V(g)$Field = as.character(nodes$subd_name[match(V(g)$name, nodes$Id)]) #watch out with the name of the column!!
-	#V(g)$Area = as.character(nodes$Discipline[match(V(g)$name, nodes$Id)]) #watch out with the name of the column!!
-	#adding color to vertex
-	#V(g)$label = V(g)$Field
-	# V(gms)$size = (degree(gms)/max(degree(gms))) * 6
-	
-	#V(g)$color = as.character(nodes$color[match(V(g)$name, nodes$Id)])  
-	#plot.igraph(g, vertex.size=5, vertex.label.cex=0.5, asp=FALSE,main=title)
-	# plot.igraph(g,  vertex.label.cex=0.7, edge.curved=TRUE,  vertex.label.font=0, vertex.label.family='Arial', vertex.label.color='black', asp=FALSE,main=title)
-	#plot.igraph(g, sub=paste('Layout:' ,subt, '. Size: degree.', 'Colored by Area of Science.'), vertex.label.cex=0.7, vertex.label.font=0, vertex.label.family='Arial', vertex.label.color='black',main=title, asp=FALSE)
-	#info_credit <- bench_credit
-	#info_template <- paste('Layout WE applied:' , lay, '| Size:', 'production', '| Colored by:', bench_color)
-	#info_interval <- paste('Data time: ', bench_interval, ' | Data Source: ', bench_source, ' | Unit of analysis: ', bench_unit, '| Technnique: ', bench_tech)
-	info_credit <- 'info'
-	info_template<- 'fr'
-	info_interval <- '2001'
-	
-	plot.igraph(g, 
-		sub=list(paste(subtitle),cex=0.7*cex), 
-		vertex.label.cex=0.6*cex, 
-		vertex.label.font=0, 
-		vertex.label.family='Helvetica', 
-		vertex.label.color='black', 
-		edge.label.cex=0.5*cex, 
-		edge.label.font=0, 
-		edge.label.family='Helvetica', 
-		main=list(title,cex=0.9*cex), 
-		asp=FALSE)
-	#dev.off()
-	legend("bottomleft",      # location of the legend on the heatmap plot
-		legend = legend,
-		pch=21, merge=FALSE,
-		pt.bg = l_pt.bg,
-		col = l_col,
-		lty= c(1,1,1,1,NA),             # line style
-		lwd = 1,           # line width
-		pt.cex = 0.8*cex,
-		box.col = "lightgrey",
-		#fill = "white"
-		cex= 0.6*cex
-	)
-	
-	if(pl_w_pdf==TRUE)
-	{
-		dev_file_name <- file.path(path_interval_overlay, paste(file_name,'.pdf', sep=''))
-		#dev.print(pdf, file=dev_file_name, widht=6, height=3 );
-		pdf(dev_file_name, width=16, height=12, family='Helvetica', pointsize=8)
-		#, edge.label.color='black'
-		
-		plot.igraph(g, 
-			sub=list(paste(subtitle), cex=0.8*cex), 
-			vertex.label.cex=0.8*cex, 
-			vertex.label.font=0, 
-			vertex.label.family='Helvetica',  
-			vertex.label.color='black',  
-			edge.label.cex=0.5*cex, 
-			edge.label.font=0,
-			edge.label.family='Helvetica', 
-			main=title, 
-			asp=FALSE)
-		
-		legend("bottomleft",      # location of the legend on the heatmap plot
-			legend = legend,
-			pch=21, merge=FALSE,
-			pt.bg = l_pt.bg,
-			col = l_col,
-			lty= c(1,1,1,1,NA),             # line style
-			lwd = 3,           # line width
-			pt.cex = 2,
-			box.col = "lightgrey",
-			#fill = "white"
-			cex= 1
-		)
-		
-		dev.off()
-		#dev.copy(pdf,filename=dev_file_name, family='Helvetica');
-		#dev.off ();
-	}
-	
-	
-}
 
 
 
@@ -887,7 +1166,7 @@ plot_roc_interval <- function(data_eval_sor, positive, trans="", col="skyblue", 
 #' get_prod_name()
 #' @return a name for the producer, based on its id. It returns the id in case the column name was not found.
 #' @export
-get_prod_name <- function(id_prod, producers)
+get_prod_name <- function(id_prod, producers=NULL)
 {
   if(is.null(producers)==TRUE)
   {
@@ -898,9 +1177,17 @@ get_prod_name <- function(id_prod, producers)
   }
 }
 
-get_prod_domain <- function(id_prod)
+get_prod_domain <- function(id_prod, producers=NULL)
 {
-	prod_domain <- as.character(producers$i.domain[producers$id==id_prod])
+  if(is.null(producers)==TRUE)
+  {
+    return(id_prod)
+  }  
+  else{
+    return(prod_domain <- as.character(producers$i.domain[producers$id==id_prod]))
+  }
+  
+  
 }
 
 

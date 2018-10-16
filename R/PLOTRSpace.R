@@ -204,7 +204,7 @@ plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_see
 		#plot_graph_smart_2(g_to_plot, main = paste('Research Space in', taxo, 'classification'), sub='Autodetected Community Colors Assigned', lay = "fr", v_label='no', v_col='com', cex = cex, v_min_size=v_min_size)
 
 	
-	g_merge_copy <<- g
+	g_plot <<- g_to_plot
 	
 	return(g)
 }
@@ -219,7 +219,7 @@ plot_map <- function(file_rs, nodes, mean_degree=5, mode="max", mst=TRUE, pl_see
 #pl_seed the seed to use in the plot
 #lay the layout to use, a mnemonic fr or drl or cir
 #' @export
-plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, pl_seed="69", lay='fr', v_label='com', v_size='degree', v_col='com', v_min_size=10, pdf_w=FALSE, file_name=NULL)
+plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, pl_seed="77", lay='fr', v_label='com', v_size='degree', v_col='com', v_min_size=10, pdf_w=FALSE, file_name=NULL, legend=NULL)
 {
 	#nodes = ucsd_nodes #HARD CODED!!
 	######GRAPH PROPERTIES
@@ -266,23 +266,28 @@ plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, p
 		V(g)$label <- ''
 	
 	print("Coloring .... in")
-	#color
+	#color #com for community, #orig for size in original, #own to mantain the color of g
 	if(v_col == 'com')
 		V(g)$color <- colors[membership(fc)]
 	if(v_col == 'orig')
 		V(g)$color <- as.character(nodes$color[match(V(g)$name, nodes$Id)]) 
 	
-	sub <- paste(sub, '\n Number of full communities:', length(unique(V(g)$color)))
+	
+	#sub <- paste(sub, '\n Number of full communities:', length(unique(V(g)$color)))
 	#size
 	print("Sizing Nodes...")
-	if(is.numeric(v_size)==TRUE)
+	if(is.numeric(v_size)==TRUE) #equal size for every node
 		V(g)$size <- v_size
-	if(v_size=='degree')
+	if(v_size=='degree')  #got size according degree
 		V(g)$size <- ((degree(g)+v_min_size)/max(degree(g))) * v_min_size
-	if(v_size == 'orig')
+	if(v_size == 'orig') #got size according original size in nodes info
 	{
 		V(g)$size <- as.numeric(nodes$size[match(V(g)$name, nodes$Id)]) 
 		V(g)$size <- (V(g)$size/max(V(g)$size)) *5
+	}  #own does not change the size of the g
+	if(v_size == 'own')
+	{
+	  V(g)$size <- (V(g)$size/max(V(g)$size)) *5
 	}
 	
 	#EDGES PROPERTIES
@@ -307,7 +312,7 @@ plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, p
 	#legend = c(paste("Inactive", num_ina), paste("Undeveloped", num_und), paste("Growing", num_grw), paste("Developed", num_dev), paste("Opportunity", num_rcm)) # category labels 
 	#deleted rs_plot
 	 plot.igraph(g, 
-		vertex.label.cex=0.1*cex, 
+		vertex.label.cex=0.05*cex, 
 		main= list(main, cex=1*cex),
 		vertex.label.font=0, 
 		vertex.label.family='Helvetica', 
@@ -317,6 +322,26 @@ plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, p
 		sub=list(sub,	cex=0.8*cex),
 		asp=FALSE
 	)
+	 if(!is.null(legend))
+	 {
+	   legend("bottomleft",      # location of the legend on the heatmap plot
+	           legend = legend,
+	           pch=21, merge=FALSE,
+	           # #pch=19, merge=FALSE,
+	           pt.bg <- c("white", rev(heat.colors(3)), "white"),
+	           col = node.colors <- c("white", rev(heat.colors(3)), "white"),
+	           # #lty= c(1,1,1,1,NA),             # line style
+	           lty= NA,             # line style
+	           lwd = 1,           # line width
+	           # #lwd = NA,           # line width
+	           pt.cex = 0.8*cex,
+	           box.col = "lightgrey",
+	           # #fill = "white"
+	           cex= 0.6*cex
+	   )
+	     
+	   
+	 }
 	# legend("bottomleft",      # location of the legend on the heatmap plot
 	# 	legend = as.vector(areas_df$Discipline),
 	# 	pch=19, merge=FALSE,
@@ -332,15 +357,16 @@ plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, p
 	print("Should have printed...")
 	
 	#EXPORTING PDF file
-	if(pdf_w ==TRUE)
+	if(!is.null(file_name))
 	{
-	  path_rs =""
-		dev_file_name <- file.path(path_rs,'RESEARCH SPACE OUTPUT', paste(file_name,'.pdf', sep=''))
+	  #path_rs =""
+		dev_file_name <- file.path()
+		dev_file_name <- file_name
 		#dev.print(pdf, file=dev_file_name, widht=6, height=3 );
 		pdf(dev_file_name, width=16, height=12, family='Helvetica', pointsize=8)
 		plot.igraph(g, 
 			vertex.label.cex=1.1*cex, 
-		#	main= list(main, cex=1*cex),
+			main= list(main, cex=1*cex),
 			vertex.label.font=0, 
 			vertex.label.family='Helvetica', 
 			vertex.label.color='black', 
@@ -350,18 +376,41 @@ plot_graph_smart_2 <- function(g, nodes, main='', sub=NULL, sub_add='', cex=1, p
 		#	sub=list(sub,	cex=0.8*cex),
 			asp=FALSE
 		)
-		legend("bottomleft",      # location of the legend on the heatmap plot
-			legend = as.vector(areas_df$Discipline),
-			pch=19, merge=FALSE,
-			pt.bg = 'black',
-			col = as.vector(areas_df$color),
-			#lty= NA,             # line style
-			lwd = 1,           # line width
-			pt.cex = 3*cex,
-			box.col = "lightgrey",
-			#fill = "white",
-			cex= 1.5*cex
+		
+		if(is.null(legend))
+		{
+		  legend("bottomleft",      # location of the legend on the heatmap plot
+		         legend = as.vector(areas_df$Discipline),
+		         pch=19, merge=FALSE,
+		         pt.bg = 'black',
+		         col = as.vector(areas_df$color),
+		         #lty= NA,             # line style
+		         lwd = 1,           # line width
+		         pt.cex = 3*cex,
+		         box.col = "lightgrey",
+		         #fill = "white",
+		         cex= 1.5*cex
+		  )
+		}
+		else
+		{ legend("bottomleft",      # location of the legend on the heatmap plot
+		         legend = legend,
+		         pch=21, merge=FALSE,
+		         # #pch=19, merge=FALSE,
+		         pt.bg <- c("white", rev(heat.colors(3)), "white"),
+		         col = node.colors <- c("white", rev(heat.colors(3)), "white"),
+		         # #lty= c(1,1,1,1,NA),             # line style
+		         lty= NA,             # line style
+		         lwd = 1,           # line width
+		         # #lwd = NA,           # line width
+		         pt.cex = 0.8*cex,
+		         box.col = "lightgrey",
+		         # #fill = "white"
+		         cex= 0.6*cex
 		)
+		  
+		}
+		
 		
 		dev.off()
 	}

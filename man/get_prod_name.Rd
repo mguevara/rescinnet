@@ -4,7 +4,7 @@
 \alias{get_prod_name}
 \title{Get the name of a producer}
 \usage{
-get_prod_name(id_prod, producers)
+get_prod_name(id_prod, producers = NULL)
 }
 \arguments{
 \item{id_prod}{an identifier for a producer.}
